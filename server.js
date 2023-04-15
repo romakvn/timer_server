@@ -1,6 +1,7 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
+const { query, run } = require('./services/db')
 
 let app = express()
 
@@ -8,14 +9,30 @@ app.use(cors())
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
 
+
+app.get("/ping", (req, res) => {
+    res.json({"message": "pong"})
+})
+
+
 app.get("/api/rooms", (req, res) => {
-    let _rooms = require('../common/rooms.json');
-    res.json(_rooms)
+    res.json(query("select * from Rooms;"))
 })
 
 app.get("/api/prices", (req, res) => {
-    let prices = require('../common/prices.json').prices;
-    res.json(prices)
+    res.json(query("select * from Prices;"))
+})
+
+app.get("/api/records", (req, res) => {
+    let res_ = query("SELECT sum(total) as total from Records where createdAt = (select max(createdAt) from Records)")
+    res.json(res_)
+})
+
+app.post("/api/records", (req, res) => {
+    console.log(req.body)
+    const {roomId, roomType, players, selectedTime, startTime, endTime, actualTime, total, createdAt} = req.body
+    let res_ = run("insert into Records(roomId, roomType, players, selectedTime, startTime, endTime, actualTime, total, createdAt) values (@roomId, @roomType, @players, @selectedTime, @startTime, @endTime, @actualTime, @total, @createdAt)", {roomId, roomType, players, selectedTime, startTime, endTime, actualTime, total, createdAt})
+    console.log(res_)
 })
 
 app.put("/api/prices", (req, res) => {
@@ -58,6 +75,8 @@ app.post("/api/records", (req, res) => {
     console.log(payload)
 })
 
-app.listen(3001, () => {
-    console.log("Server running on port 3001")
+app.listen(3002, "0.0.0.0", () => {
+    console.log("Server running on port 3002")
 })
+
+
